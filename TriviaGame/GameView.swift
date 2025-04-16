@@ -11,32 +11,45 @@ struct GameView: View {
     let amount: Int
     let difficulty: String
     let type: String
+    let category: Int?
 
     @State private var questions: [TriviaQuestion] = []
     @State private var selectedAnswers: [UUID: String] = [:]
     @State private var showScore = false
     @State private var score = 0
-    @State private var timeRemaining = 60
 
     var body: some View {
         VStack {
-            Text("Time Remaining: \(timeRemaining)").padding()
-            List(questions) { question in
-                VStack(alignment: .leading) {
-                    Text(question.question.decodedHTML)
-                    ForEach(question.allAnswers, id: \.self) { answer in
-                        HStack {
-                            Image(systemName: selectedAnswers[question.id] == answer ? "circle.inset.filled" : "circle")
-                            Text(answer)
-                        }
-                        .onTapGesture {
-                            selectedAnswers[question.id] = answer
+            if questions.isEmpty {
+                ProgressView("Loading Questions...")
+                    .onAppear {
+                        TriviaAPI.fetchTrivia(amount: amount, category: category, difficulty: difficulty, type: type) { fetched in
+                            self.questions = fetched
                         }
                     }
-                }
-                .padding(.vertical)
-            }
+            } else {
+                // Displays questions in a List view
+                List(questions) { question in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(question.question.decodedHTML)
 
+                        // Loop through shuffled answers
+                        ForEach(question.allAnswers, id: \.self) { answer in
+                            HStack {
+                                Image(systemName: selectedAnswers[question.id] == answer ? "largecircle.fill.circle" : "circle")
+                                    .foregroundColor(.blue)
+                                Text(answer.decodedHTML)
+                            }
+                            .onTapGesture {
+                                selectedAnswers[question.id] = answer // User answer selected
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            
+            // Submit button to trigger score calculation
             Button("Submit") {
                 calculateScore()
                 showScore = true
@@ -45,14 +58,9 @@ struct GameView: View {
             .alert("Your Score", isPresented: $showScore) {
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("\(score)/\(questions.count) correct")
+                Text("You got \(score) out of \(questions.count) correct.")
             }
-        }
-        .onAppear {
-            TriviaAPI.fetchTrivia(amount: amount, category: nil, difficulty: difficulty, type: type) { questions in
-                self.questions = questions
-                startTimer()
-            }
+            .navigationTitle("Trivia")
         }
     }
 
@@ -62,17 +70,6 @@ struct GameView: View {
                 return result + 1
             } else {
                 return result
-            }
-        }
-    }
-
-    func startTimer() {
-        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
-            timeRemaining -= 1
-            if timeRemaining <= 0 {
-                timer.invalidate()
-                calculateScore()
-                showScore = true
             }
         }
     }

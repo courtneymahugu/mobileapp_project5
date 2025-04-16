@@ -8,10 +8,19 @@ import Foundation
 
 extension String {
     var decodedHTML: String {
-        guard let data = self.data(using: .utf8) else { return self }
-        let attributed = try? NSAttributedString(data: data, options: [
-            .documentType: NSAttributedString.DocumentType.html
-        ], documentAttributes: nil)
-        return attributed?.string ?? self
+        var result = self
+        let entities = [
+            "&quot;" : "\"",
+            "&apos;" : "'",
+            "&amp;" : "&",
+            "&lt;" : "<",
+            "&gt;" : ">",
+            "&#039;" : "'"
+        ]
+        for (entity, replacement) in entities {
+            result = result.replacingOccurrences(of: entity, with: replacement)
+        }
+        return result
     }
 }
+

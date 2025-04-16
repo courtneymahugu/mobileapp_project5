@@ -11,13 +11,19 @@ struct TriviaResponse: Codable {
 }
 
 struct TriviaQuestion: Codable, Identifiable {
-    var id: UUID { UUID() }
     let question: String
     let correct_answer: String
     let incorrect_answers: [String]
+    
+    let id = UUID()
 
     var allAnswers: [String] {
         (incorrect_answers + [correct_answer]).shuffled()
     }
+    
+    enum CodingKeys: String, CodingKey {
+            case question, correct_answer, incorrect_answers
+            // 👈 Not including `id` tells the decoder to ignore it
+        }
 }
 
